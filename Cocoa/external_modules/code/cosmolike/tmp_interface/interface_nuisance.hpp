@@ -35,4 +35,8 @@ void set_nuisance_shear_calib(
     arma::Col<double> M
   );
 
+void set_nuisance_pz_parametrization(
+    const int pz_parametrization
+  );  
+
 } // namespace cosmolike_interface

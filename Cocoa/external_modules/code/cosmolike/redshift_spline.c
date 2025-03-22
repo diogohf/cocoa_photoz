@@ -414,6 +414,31 @@ double zdistr_histo_n(double z, const int ni)
   return res;
 }
 
+// // DHFS - WORK IN PROGRESS
+// double zdistr_photoz_pca(double zz, const int tomo_j){
+// // double zdistr_photoz_pca(double z_true, const int tomo_i){
+// // res = n_bar + (alpha_1 * PC_1) + (alpha_2 * PC_2) + (alpha_3 * PC_3)
+//   double PC[10];
+//   static gsl_spline* photoz_splines_pca[MAX_SIZE_ARRAYS+1];  
+//   int tomo_j;
+
+//   #pragma omp parallel for
+//   for (int i=0; i<ntomo+1; i++) 
+//   {
+//     int status = gsl_spline_init(photoz_splines_pca[i], 
+//                                  table[ntomo+1], // z_v = table[ntomo+1]
+//                                  table[i], // DHFS - this table must return the PCs(z), not anymore the histogram n(z)
+//                                  nzbins);
+//   }
+
+//   // DHFS - Return the interpolated value at GENERAL (but still inside the boudaries) redshift zz 
+//   double res;
+//   int status = gsl_spline_eval_e(photoz_splines_pca[tomo_j+1], zz, NULL, &res);
+
+//   return 0;
+// } 
+// // DHFS - WORK IN PROGRESS
+
 double zdistr_photoz(double zz, const int nj) 
 {
   static double cache_redshift_nz_params_shear;
@@ -501,7 +526,20 @@ double zdistr_photoz(double zz, const int nj)
     exit(1);
   }
   
-  zz = zz - nuisance.photoz[0][0][nj];
+  switch (nuisance.pz_model)
+  {
+  case 0:
+    zz = zz - nuisance.photoz[0][0][nj];
+    break;
+  
+  case 1: 
+    zz = (zz - nuisance.photoz[0][0][nj])/nuisance.photoz[0][1][nj];
+    break;
+
+  default: 
+    zz = zz - nuisance.photoz[0][0][nj];
+    break;
+  }
   
   double res; 
   if (zz <= table[ntomo+1][0] || zz >= table[ntomo+1][nzbins - 1])

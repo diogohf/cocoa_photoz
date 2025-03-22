@@ -379,4 +379,10 @@ void set_nuisance_IA(arma::Col<double> A1, arma::Col<double> A2,
 // ---------------------------------------------------------------------------
 // ---------------------------------------------------------------------------
 // ---------------------------------------------------------------------------
+
+void set_nuisance_pz_parametrization(const int pz_parametrization)
+{
+  nuisance.pz_parametrization = pz_parametrization;
+}
+
 } // namespace cosmolike_interface

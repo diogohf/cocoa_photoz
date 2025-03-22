@@ -211,6 +211,7 @@ typedef struct
   
   int IA;
   int IA_MODEL;
+  int pz_model;
   double ia[MAX_SIZE_ARRAYS][MAX_SIZE_ARRAYS];
   double oneplusz0_ia;
   double c1rhocrit_ia;
