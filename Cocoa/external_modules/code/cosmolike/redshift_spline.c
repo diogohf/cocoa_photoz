@@ -740,7 +740,7 @@ double pf_photoz(double zz, int nj)
     break;
   
   case 1: 
-    zz = (zz - nuisance.photoz[1][0][nj])/nuisance.photoz[0][1][nj];
+    zz = (zz - nuisance.photoz[1][0][nj])/nuisance.photoz[1][1][nj]; // DHFS - Eq 21 2105.13546?
     break;
 
   default: 
@@ -763,7 +763,17 @@ double pf_photoz(double zz, int nj)
       exit(1);
     }
   }
-  return res;
+  switch (nuisance.pz_model)
+  {
+  case 0:
+    return res;
+    break;
+  case 1:
+    return res/nuisance.photoz[1][1][nj]; // DHFS - Eq 21 2105.13546?
+    break;
+  default:
+    return res  
+  }
 }
 
 double int_for_zmean(double z, void* params) 
