@@ -772,7 +772,8 @@ double pf_photoz(double zz, int nj)
     return res/nuisance.photoz[1][1][nj]; // DHFS - Eq 21 2105.13546?
     break;
   default:
-    return res  
+    return res
+    break;  
   }
 }
 
