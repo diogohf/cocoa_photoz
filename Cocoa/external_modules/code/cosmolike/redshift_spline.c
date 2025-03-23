@@ -526,20 +526,7 @@ double zdistr_photoz(double zz, const int nj)
     exit(1);
   }
   
-  switch (nuisance.pz_model)
-  {
-  case 0:
-    zz = zz - nuisance.photoz[0][0][nj];
-    break;
-  
-  case 1: 
-    zz = (zz - nuisance.photoz[0][0][nj])/nuisance.photoz[0][1][nj];
-    break;
-
-  default: 
-    zz = zz - nuisance.photoz[0][0][nj];
-    break;
-  }
+  zz = zz - nuisance.photoz[0][0][nj];
   
   double res; 
   if (zz <= table[ntomo+1][0] || zz >= table[ntomo+1][nzbins - 1])
@@ -746,7 +733,21 @@ double pf_photoz(double zz, int nj)
     exit(1);
   }
   
-  zz = zz - nuisance.photoz[1][0][nj];
+  switch (nuisance.pz_model)
+  {
+  case 0:
+    zz = zz - nuisance.photoz[1][0][nj];
+    break;
+  
+  case 1: 
+    zz = (zz - nuisance.photoz[1][0][nj])/nuisance.photoz[0][1][nj];
+    break;
+
+  default: 
+    zz = zz - nuisance.photoz[1][0][nj];
+    break;
+  }
+
   
   double res; 
   if (zz <= table[ntomo+1][0] || zz >= table[ntomo+1][nzbins - 1])
