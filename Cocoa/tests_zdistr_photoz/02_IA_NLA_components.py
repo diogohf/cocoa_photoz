@@ -242,7 +242,7 @@ def C_ss_tomo_limber(ell,
 ### PLOT FUNCTION
 def plot_C_ss_tomo_limber(ell, C_sss, ia_nla_terms, ylabel, C_ss_ref = None, param = None, colorbarlabel = None, lmin = 30, lmax = 1500, 
                           cmap = 'gist_rainbow', ylim = [0.75,1.25], linestyle = None, linewidth = None,
-                          legend = None, legendloc = (0.6,0.78), yaxislabelsize = 16, yaxisticklabelsize = 10, 
+                          legend = None, legendloc = (0.65,0.60), yaxislabelsize = 16, yaxisticklabelsize = 10, 
                           xaxisticklabelsize = 20, bintextpos = [0.2, 0.85], bintextsize = 15, figsize = (12, 12), 
                           show = 1):
 
@@ -313,9 +313,9 @@ def plot_C_ss_tomo_limber(ell, C_sss, ia_nla_terms, ylabel, C_ss_ref = None, par
                     axes[j,i].set_xlim([lmin, lmax])
                     
                     if C_ss_ref is None:
-                        pass
-                        # axes[j,i].set_ylim([np.min(ylim[0]*np.array(clmin)), np.max(ylim[1]*np.array(clmax))])
                         axes[j,i].set_yscale('log')
+                        # pass
+                        # axes[j,i].set_ylim([np.min(ylim[0]*np.array(clmin)), np.max(ylim[1]*np.array(clmax))])
                     else:
                         tmp = np.array(ylim) - 1
                         # axes[j,i].set_ylim(tmp.tolist())
@@ -354,10 +354,6 @@ def plot_C_ss_tomo_limber(ell, C_sss, ia_nla_terms, ylabel, C_ss_ref = None, par
                                             linewidth=2, 
                                             linestyle=ls[ia_idx])
     
-    # if not (legend is None):
-        # if len(legend) != len(C_ss):
-        #     print("Bad Input")
-        #     return 0
     fig.legend(
         legend, 
         loc=legendloc,
@@ -366,7 +362,8 @@ def plot_C_ss_tomo_limber(ell, C_sss, ia_nla_terms, ylabel, C_ss_ref = None, par
         handlelength=1.5,
         columnspacing=0.35,
         scatteryoffsets=[0],
-        frameon=False)
+        frameon=False,
+        fontsize=20)
 
     if not (show is None):
         fig.show()
@@ -423,11 +420,11 @@ for i,idx in enumerate(ia_nla_terms):
     C_sssf[i].append(frac)
 
 plt.figure()
-plot_C_ss_tomo_limber(ell=ell, C_sss=abs(np.array(C_sss)),ylabel="$|C_{\ell}^{NLA~TERM}|$",
-    ia_nla_terms=ia_nla_terms,legend=[r'$+$WK1$\times$WK2$\times$PK',r'$-$WS1$\times$WK2$\times$C11$\times$PK',r'$-$WS2$\times$WK1$\times$C12$\times$PK',r'$+$WS1$\times$WS2$\times$C11$\times$C12$\times$PK','$C_{\ell}^{EE}$'])
+plot_C_ss_tomo_limber(ell=ell, C_sss=abs(np.array(C_sss)),ylabel="$|C^{NLA}_{AB}|$",
+    ia_nla_terms=ia_nla_terms,legend=[r'$C^{ij}_{\kappa\kappa}$',r'$C^{ij}_{\kappa I_E}$',r'$C^{ji}_{\kappa I_E}$',r'$C^{ij}_{I_E I_E}$','$C_{EE}$'])
 plt.savefig(f'./02_IA_NLA_components.pdf')
 
 plt.figure()
-plot_C_ss_tomo_limber(ell=ell, C_sss=abs(np.array(C_sssf)),ylabel="$|C_{\ell}^{NLA~TERM}/C_{\ell}^{EE}|$",
-    ia_nla_terms=ia_nla_terms,legend=[r'$+$WK1$\times$WK2$\times$PK',r'$-$WS1$\times$WK2$\times$C11$\times$PK',r'$-$WS2$\times$WK1$\times$C12$\times$PK',r'$+$WS1$\times$WS2$\times$C11$\times$C12$\times$PK','$C_{\ell}^{EE}$'])
+plot_C_ss_tomo_limber(ell=ell, C_sss=abs(np.array(C_sssf)),ylabel="$|C^{NLA}_{AB}/C_{EE}|$",
+    ia_nla_terms=ia_nla_terms,legend=[r'$C^{ij}_{\kappa\kappa}/C^{ij}_{EE}$',r'$C^{ij}_{\kappa I_E}/C^{ij}_{EE}$',r'$C^{ji}_{\kappa I_E}/C^{ij}_{EE}$',r'$C^{ij}_{I_E I_E}/C^{ij}_{EE}$','$C_{EE}/C_{EE}$'])
 plt.savefig(f'./02_IA_NLA_fracs.pdf')
