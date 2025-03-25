@@ -216,6 +216,62 @@ py::tuple C_ss_tomo_limber_cpp(const arma::Col<double> l)
 // ---------------------------------------------------------------------------
 // ---------------------------------------------------------------------------
 
+// DHFS MOD START - DECOMPOSING COSMIC SHEAR INTO ITS IA TERMS
+
+py::tuple C_ss_tomo_limber_WK1WK2PK_cpp(const double l, const int ni, const int nj)
+{
+  return py::make_tuple(
+    C_ss_tomo_limber_nointerp_WK1WK2PK(l, ni, nj, 1, 0),
+    C_ss_tomo_limber_nointerp_WK1WK2PK(l, ni, nj, 0, 0) 
+  );
+}
+
+py::tuple C_ss_tomo_limber_WK1WK2PK_cpp(const arma::Col<double> l)
+{
+  if (!(l.n_elem > 0))
+  {
+    spdlog::critical("\x1b[90m{}\x1b[0m: l array size = {}", l.n_elem);
+    exit(1);
+  }
+  
+  arma::Cube<double> EE(l.n_elem,
+                        redshift.shear_nbin,
+                        redshift.shear_nbin,
+                        arma::fill::zeros);
+  arma::Cube<double> BB(l.n_elem,
+                        redshift.shear_nbin,
+                        redshift.shear_nbin,
+                        arma::fill::zeros);
+
+  #pragma GCC diagnostic push
+  #pragma GCC diagnostic ignored "-Wunused-variable"
+  { // init static variables
+    const int ni = Z1(0);
+    const int nj = Z2(0);
+    double trash = C_ss_tomo_limber_nointerp_WK1WK2PK(l(0), ni, nj, 1, 1);
+    trash = C_ss_tomo_limber_nointerp_WK1WK2PK(l(0), ni, nj, 0, 1);
+  }
+  #pragma GCC diagnostic pop
+
+  #pragma omp parallel for collapse(2)
+  for (int nz=0; nz<tomo.shear_Npowerspectra; nz++)
+  {
+    for (int i=0; i<static_cast<int>(l.n_elem); i++)
+    {
+      const int ni = Z1(nz);
+      const int nj = Z2(nz);
+      EE(i, ni, nj) = C_ss_tomo_limber_nointerp_WK1WK2PK(l(i), ni, nj, 1, 0);
+      BB(i, ni, nj) = C_ss_tomo_limber_nointerp_WK1WK2PK(l(i), ni, nj, 0, 0);
+    }
+  }
+  return py::make_tuple(carma::cube_to_arr(EE),carma::cube_to_arr(BB));
+}
+
+// DHFS MOD END - DECOMPOSING COSMIC SHEAR INTO ITS IA TERMS
+
+// ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
+
 arma::Mat<double> gs_bins()
 {
   arma::Mat<double> result(tomo.ggl_Npowerspectra, 2);
@@ -696,6 +752,144 @@ py::tuple int_for_C_ss_tomo_limber_cpp(
   }
   return py::make_tuple(carma::cube_to_arr(EE), carma::cube_to_arr(BB));
 }
+
+// ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
+
+// DHFS MOD START - DECOMPOSING COSMIC SHEAR INTO ITS IA TERMS
+double int_for_C_ss_EE_tomo_limber_WK1WK2PK_cpp(
+    const double a, 
+    const double l, 
+    const int ni, 
+    const int nj
+  )
+{
+  double ar[4] = {(double) ni, (double) nj, l, 1};
+  return int_for_C_ss_tomo_limber_WK1WK2PK(a, (void*) ar); 
+}
+
+arma::Cube<double> int_for_C_ss_EE_tomo_limber_WK1WK2PK_cpp(
+    arma::Col<double> a, 
+    arma::Col<double> l
+  )
+{
+  if (!(l.n_elem > 0 && a.n_elem > 0))
+  {
+    spdlog::critical("\x1b[90m{}\x1b[0m: l array size = {}", l.n_elem);
+    spdlog::critical("\x1b[90m{}\x1b[0m: a array size = {}", a.n_elem);
+    exit(1);
+  }
+
+  arma::Cube<double> result(a.n_elem, l.n_elem, tomo.shear_Npowerspectra);
+
+  #pragma GCC diagnostic push
+  #pragma GCC diagnostic ignored "-Wunused-variable"
+  for (int nz=0; nz<tomo.shear_Npowerspectra; nz++)
+  { // init static variables
+    double tmp = int_for_C_ss_EE_tomo_limber_WK1WK2PK_cpp(a(0),l(0),Z1(nz),Z2(nz));
+  }
+  #pragma GCC diagnostic pop
+
+  #pragma omp parallel for collapse(3)
+  for (int nz=0; nz<tomo.shear_Npowerspectra; nz++)
+    for (int i=0; i<l.n_elem; i++)
+      for (int j=0; j<a.n_elem; j++)
+        result(j,i,nz) = int_for_C_ss_EE_tomo_limber_WK1WK2PK_cpp(a(j),l(i),Z1(nz),Z2(nz));
+  return result;
+}
+
+double int_for_C_ss_BB_tomo_limber_WK1WK2PK_cpp(
+    const double a, 
+    const double l, 
+    const int ni, 
+    const int nj
+  )
+{
+  double ar[4] = {(double) ni, (double) nj, l, 0};
+  return int_for_C_ss_tomo_limber_WK1WK2PK(a, (void*) ar); 
+}
+
+arma::Cube<double> int_for_C_ss_BB_tomo_limber_WK1WK2PK_cpp(
+    arma::Col<double> a, 
+    arma::Col<double> l
+  )
+{
+  if (!(l.n_elem > 0 && a.n_elem > 0))
+  {
+    spdlog::critical("\x1b[90m{}\x1b[0m: l array size = {}", l.n_elem);
+    spdlog::critical("\x1b[90m{}\x1b[0m: a array size = {}", a.n_elem);
+    exit(1);
+  }
+
+  arma::Cube<double> result(a.n_elem, l.n_elem, tomo.shear_Npowerspectra);
+
+  #pragma GCC diagnostic push
+  #pragma GCC diagnostic ignored "-Wunused-variable"
+  for (int nz=0; nz<tomo.shear_Npowerspectra; nz++)
+  { // init static variables
+    double tmp = int_for_C_ss_BB_tomo_limber_WK1WK2PK_cpp(a(0), l(0), Z1(nz), Z2(nz));
+  }
+  #pragma GCC diagnostic pop
+
+  #pragma omp parallel for collapse(3)
+  for (int nz=0; nz<tomo.shear_Npowerspectra; nz++)
+    for (int i=0; i<l.n_elem; i++)
+      for (int j=0; j<a.n_elem; j++)
+        result(j,i,nz) = int_for_C_ss_BB_tomo_limber_WK1WK2PK_cpp(a(j),l(i),Z1(nz),Z2(nz));
+  return result;
+}
+
+py::tuple int_for_C_ss_tomo_limber_WK1WK2PK_cpp(
+    const double a, 
+    const double l, 
+    const int ni, 
+    const int nj
+  )
+{
+  return py::make_tuple(
+    int_for_C_ss_EE_tomo_limber_cpp(a, l, ni, nj),
+    int_for_C_ss_BB_tomo_limber_cpp(a, l, ni, nj)
+  );
+}
+
+py::tuple int_for_C_ss_tomo_limber_WK1WK2PK_cpp(
+  const arma::Col<double> a, const arma::Col<double> l)
+{
+  if (!(l.n_elem > 0 && a.n_elem > 0))
+  {
+    spdlog::critical("\x1b[90m{}\x1b[0m: l array size = {}", l.n_elem);
+    spdlog::critical("\x1b[90m{}\x1b[0m: a array size = {}", a.n_elem);
+    exit(1);
+  }
+
+  arma::Cube<double> EE(a.n_elem, l.n_elem, tomo.shear_Npowerspectra);
+  arma::Cube<double> BB(a.n_elem, l.n_elem, tomo.shear_Npowerspectra);
+
+  #pragma GCC diagnostic push
+  #pragma GCC diagnostic ignored "-Wunused-variable"
+  { // init static variables
+    double tmp = int_for_C_ss_EE_tomo_limber_cpp(a(0), l(0), Z1(0), Z2(0));
+    tmp = int_for_C_ss_BB_tomo_limber_cpp(a(0), l(0), Z1(0), Z2(0));
+  }
+  #pragma GCC diagnostic pop
+
+  #pragma omp parallel for collapse(3)
+  for (int nz=0; nz<tomo.shear_Npowerspectra; nz++)
+  {
+    for (int i=0; i<l.n_elem; i++)
+    {
+      for (int j=0; j<a.n_elem; j++)
+      {
+        EE(j,i,nz) = int_for_C_ss_EE_tomo_limber_cpp(a(j),l(i),Z1(nz),Z2(nz));
+        BB(j,i,nz) = int_for_C_ss_BB_tomo_limber_cpp(a(j),l(i),Z1(nz),Z2(nz));
+      }
+    }
+  }
+  return py::make_tuple(carma::cube_to_arr(EE), carma::cube_to_arr(BB));
+}
+
+
+// DHFS MOD END - DECOMPOSING COSMIC SHEAR INTO ITS IA TERMS
 
 // ---------------------------------------------------------------------------
 // ---------------------------------------------------------------------------

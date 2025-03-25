@@ -1197,6 +1197,198 @@ double C_ss_tomo_limber(const double l, const int ni, const int nj, const int EE
 // ---------------------------------------------------------------------------
 // ---------------------------------------------------------------------------
 
+// DHFS MOD START - DECOMPOSING COSMIC SHEAR INTO ITS IA TERMS
+
+double int_for_C_ss_tomo_limber_WK1WK2PK(double a, void* params)
+{
+  if (!(a>0) || !(a<1)) 
+  {
+    log_fatal("a>0 and a<1 not true");
+    exit(1);
+  }
+  double* ar = (double*) params;
+
+  const int n1 = (int) ar[0]; // first source bin 
+  const int n2 = (int) ar[1]; // second source bin 
+  if (n1 < 0 || 
+      n1 > redshift.shear_nbin - 1 || 
+      n2 < 0 || 
+      n2 > redshift.shear_nbin - 1)
+  {
+    log_fatal("error in selecting bin number (ni, nj) = [%d,%d]", n1, n2);
+    exit(1);
+  }
+  const double l = ar[2];
+  const int EE = (int) ar[3];
+
+  const double ell = l + 0.5;
+  struct chis chidchi = chi_all(a);
+  const double growfac_a = growfac(a);
+  const double hoverh0 = hoverh0v2(a, chidchi.dchida);
+  const double fK = f_K(chidchi.chi);
+  const double k = ell/fK;
+  
+  const double WK1 = W_kappa(a, fK, n1);
+  const double WK2 = W_kappa(a, fK, n2);
+  const double WS1 = W_source(a, n1, hoverh0);
+  const double WS2 = W_source(a, n2, hoverh0);
+  const double PK  = Pdelta(k,a);
+
+  const double ell4 = ell*ell*ell*ell; // correction (1812.05995 eqs 74-79)
+  const double ell_prefactor = l*(l - 1.)*(l + 1.)*(l + 2.)/ell4; 
+
+  double ans;
+
+  if (EE == 1 && nuisance.IA_MODEL==IA_MODEL_NLA)
+  { 
+    double IA_A1[2];
+    IA_A1_Z1Z2(a, growfac_a, n1, n2, IA_A1);
+    const double C11 = IA_A1[0];
+    const double C12 = IA_A1[1];
+    ans =   WK1*WK2*PK;
+  }
+  else
+  {
+    ans = 0.0;
+  }
+
+  return ans*(chidchi.dchida/(fK*fK))*ell_prefactor;
+}
+
+
+double C_ss_tomo_limber_nointerp_WK1WK2PK(
+    const double l, 
+    const int ni, 
+    const int nj, 
+    const int EE, 
+    const int init
+  )
+{
+  static double cache[MAX_SIZE_ARRAYS];
+  static gsl_integration_glfixed_table* w = NULL;
+  
+  if (ni < -1 || 
+      ni > redshift.shear_nbin -1 || 
+      nj < -1 || 
+      nj > redshift.shear_nbin -1)
+  {
+    log_fatal("invalid bin input (ni, nj) = (%d, %d)", ni, nj);
+    exit(1);
+  }
+
+  if (w == NULL || fdiff(cache[0], Ntable.random))
+  {
+    const size_t szint = 60 + 50 * (Ntable.high_def_integration);
+    if (w != NULL)  gsl_integration_glfixed_table_free(w);
+    w = malloc_gslint_glfixed(szint);
+    cache[0] = Ntable.random;
+  }
+
+  double ar[4] = {ni, nj, l, EE};
+  const double amin = fmax(amin_source(ni), amin_source(nj));
+  const double amax = fmin(amax_source(ni), amax_source(nj));;
+  if (!(amin>0) || !(amin<1) || !(amax>0) || !(amax<1)) 
+  {
+    log_fatal("0 < amin/amax < 1 not true");
+    exit(1);
+  }
+
+  double res = 0.0;
+  if (init == 1)
+    res = int_for_C_ss_tomo_limber_WK1WK2PK(amin, (void*) ar);
+  else
+  {
+    gsl_function F;
+    F.params = (void*) ar;
+    F.function = int_for_C_ss_tomo_limber_WK1WK2PK;
+    res = gsl_integration_glfixed(&F, amin, amax, w);
+  }
+  return res;     
+}
+
+
+double C_ss_tomo_limber_WK1WK2PK(const double l, const int ni, const int nj, const int EE)
+{
+  static double cache[MAX_SIZE_ARRAYS];
+  static double*** table;
+  static double lim[3];
+  static int nell;
+  
+  if (table == NULL || fdiff(cache[4], Ntable.random))
+  {
+    nell   = Ntable.N_ell;
+    lim[0] = log(fmax(limits.LMIN_tab - 1., 1.0));
+    lim[1] = log(limits.LMAX + 1);
+    lim[2] = (lim[1] - lim[0]) / ((double) nell - 1.);
+
+    if (table != NULL) free(table);
+    table = (double***) malloc3d(2, tomo.shear_Npowerspectra, nell);
+  }
+  
+  if (fdiff(cache[0], cosmology.random) ||
+      fdiff(cache[1], nuisance.random_photoz_shear) ||
+      fdiff(cache[2], nuisance.random_ia) ||
+      fdiff(cache[3], redshift.random_shear) ||
+      fdiff(cache[4], Ntable.random))
+  {
+    #pragma GCC diagnostic push
+    #pragma GCC diagnostic ignored "-Wunused-variable" 
+    {
+      double ini = C_ss_tomo_limber_nointerp_WK1WK2PK(exp(lim[0]),Z1(0),Z2(0),1,1);
+      ini = C_ss_tomo_limber_nointerp_WK1WK2PK(exp(lim[0]),Z1(0),Z2(0),0,1);
+    }
+    #pragma GCC diagnostic pop
+    
+    #pragma omp parallel for collapse(2)
+    for (int k=0; k<tomo.shear_Npowerspectra; k++)
+    {  
+      for (int i=0; i<nell; i++)
+      { 
+        const double l = exp(lim[0]+i*lim[2]);
+        const double Z1NZ = Z1(k);
+        const double Z2NZ = Z2(k);
+        table[0][k][i] = C_ss_tomo_limber_nointerp_WK1WK2PK(l,Z1NZ,Z2NZ,1,0);
+        table[1][k][i] = C_ss_tomo_limber_nointerp_WK1WK2PK(l,Z1NZ,Z2NZ,0,0);
+      }
+    }
+    cache[0] = cosmology.random;
+    cache[1] = nuisance.random_photoz_shear;
+    cache[2] = nuisance.random_ia;
+    cache[3] = redshift.random_shear;
+    cache[4] = Ntable.random;
+  }
+  
+  if (ni < 0 || 
+      ni > redshift.shear_nbin - 1 || 
+      nj < 0 ||
+      nj > redshift.shear_nbin - 1)
+  {
+    log_fatal("error in selecting bin number (ni, nj) = [%d,%d]", ni, nj);
+    exit(1);
+  }
+  
+  const double lnl = log(l);
+  if (lnl < lim[0])
+    log_warn("l = %e < l_min = %e. Extrapolation adopted", l, exp(lim[0]));
+  if (lnl > lim[1])
+    log_warn("l = %e > l_max = %e. Extrapolation adopted", l, exp(lim[1]));
+  
+  const int q = N_shear(ni, nj);
+  if (q < 0 || q > tomo.shear_Npowerspectra - 1)
+  {
+    log_fatal("internal logic error in selecting bin number");
+    exit(1);
+  }
+  return  interpol1d((1==EE)?table[0][q]:table[1][q],nell,lim[0],lim[1],lim[2],lnl);
+}
+
+
+// DHFS MOD END - DECOMPOSING COSMIC SHEAR INTO ITS IA TERMS
+
+// ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
+
 double int_for_C_gs_tomo_limber(double a, void* params)
 {
   if (!(a>0) || !(a<1)) 

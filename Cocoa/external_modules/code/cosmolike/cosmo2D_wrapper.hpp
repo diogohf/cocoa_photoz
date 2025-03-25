@@ -62,6 +62,34 @@ py::tuple int_for_C_ss_tomo_limber_cpp(
 // ---------------------------------------------------------------------------
 // ---------------------------------------------------------------------------
 
+// DHFS MOD START - DECOMPOSING COSMIC SHEAR INTO ITS IA TERMS 
+py::tuple C_ss_tomo_limber_WK1WK2PK_cpp(
+    const double l, 
+    const int ni, 
+    const int nj
+  );
+
+py::tuple C_ss_tomo_limber_WK1WK2PK_cpp(
+    const arma::Col<double> l
+  );
+
+py::tuple int_for_C_ss_tomo_limber_WK1WK2PK_cpp(
+    const double a, 
+    const double l, 
+    const int ni, 
+    const int nj
+  );
+
+py::tuple int_for_C_ss_tomo_limber_WK1WK2PK_cpp(
+    const arma::Col<double> a, 
+    const arma::Col<double> l
+  );
+// DHFS MOD END - DECOMPOSING COSMIC SHEAR INTO ITS IA TERMS 
+
+// ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
+
 arma::Mat<double> gs_bins();
 
 double C_gs_tomo_limber_cpp(

@@ -43,6 +43,10 @@ double w_ks_tomo(const int nt, const int ni, const int limber);
 
 double C_ss_tomo_limber(const double l, const int ni, const int nj, const int EE);
 
+// DHFS MOD START - DECOMPOSING COSMIC SHEAR INTO ITS IA TERMS
+double C_ss_tomo_limber_WK1WK2PK(const double l, const int ni, const int nj, const int EE);
+// DHFS MOD END - DECOMPOSING COSMIC SHEAR INTO ITS IA TERMS
+
 double C_gs_tomo_limber(const double l, const int ni, const int nj);
 
 double C_gg_tomo_limber(const double l, const int ni, const int nj);
@@ -67,6 +71,11 @@ double C_yy_limber(const double l);
 
 double C_ss_tomo_limber_nointerp(const double l, const int ni, const int nj, 
   const int EE, const int init);
+
+// DHFS MOD START - DECOMPOSING COSMIC SHEAR INTO ITS IA TERMS
+double C_ss_tomo_limber_nointerp_WK1WK2PK(const double l, const int ni, const int nj, 
+  const int EE, const int init);
+// DHFS MOD END - DECOMPOSING COSMIC SHEAR INTO ITS IA TERMS
 
 double C_gs_tomo_limber_nointerp(const double l, const int ni, 
   const int nj, const int init);
@@ -93,6 +102,10 @@ double C_yy_limber_nointerp(const double l, const int init);
 // ----------------------------------------------------------------------------
 
 double int_for_C_ss_tomo_limber(double a, void* params);
+
+// DHFS MOD START - DECOMPOSING COSMIC SHEAR INTO ITS IA TERMS
+double int_for_C_ss_tomo_limber_WK1WK2PK(double a, void* params);
+// DHFS MOD END - DECOMPOSING COSMIC SHEAR INTO ITS IA TERMS
 
 double int_for_C_gs_tomo_limber(double a, void* params);
 
