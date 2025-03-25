@@ -1245,7 +1245,27 @@ double int_for_C_ss_tomo_limber_WK1WK2PK(double a, void* params)
     IA_A1_Z1Z2(a, growfac_a, n1, n2, IA_A1);
     const double C11 = IA_A1[0];
     const double C12 = IA_A1[1];
-    ans =   WK1*WK2*PK;
+    switch (nuisance.ia_nla_term)
+    {
+    case 0:
+      ans =   WK1*WK2*PK;
+      break;
+    case 1:
+      ans =  -WS1*WK2*C11*PK;
+      break;
+    case 2:
+      ans =  -WS2*WK1*C12*PK;
+      break;
+    case 3:
+      ans =  WS1*WS2*C11*C12*PK;
+      break;
+    default:
+      ans =   WK1*WK2*PK 
+              - WS1*WK2*C11*PK 
+              - WS2*WK1*C12*PK
+              + WS1*WS2*C11*C12*PK;
+      break;
+    }
   }
   else
   {

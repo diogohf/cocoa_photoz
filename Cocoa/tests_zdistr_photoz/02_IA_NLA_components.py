@@ -204,7 +204,8 @@ def C_ss_tomo_limber(ell,
                      k_per_logint = 20, 
                      CAMBAccuracyBoost=1.1,
                      CLAccuracyBoost = 1.0, 
-                     CLIntegrationAccuracy = 1):
+                     CLIntegrationAccuracy = 1,
+                     ia_nla_term=-1):
 
     (log10k_interp_2D, z_interp_2D, lnPL, lnPNL, G_growth, z_interp_1D, chi) = get_camb_cosmology(omegam=omegam, 
         omegab=omegab, H0=H0, ns=ns, As_1e9=As_1e9, w=w, w0pwa=w0pwa, AccuracyBoost=AccuracyBoost, kmax=kmax,
@@ -228,6 +229,7 @@ def C_ss_tomo_limber(ell,
     ci.set_nuisance_shear_photoz(bias = shear_photoz_bias)
     ci.set_nuisance_ia(A1 = A1, A2 = A2, B_TA = BTA)
     ci.set_nuisance_pz_model(pz_model=0)
+    ci.set_nuisance_ia_nla_term(ia_nla_term=ia_nla_term)
 
     if baryon_sims is None:
         ci.reset_bary_struct()
@@ -238,13 +240,13 @@ def C_ss_tomo_limber(ell,
 
 
 ### PLOT FUNCTION
-def plot_C_ss_tomo_limber(ell, C_ss, C_ss_ref = None, param = None, colorbarlabel = None, lmin = 30, lmax = 1500, 
+def plot_C_ss_tomo_limber(ell, C_sss, ia_nla_terms, C_ss_ref = None, param = None, colorbarlabel = None, lmin = 30, lmax = 1500, 
                           cmap = 'gist_rainbow', ylim = [0.75,1.25], linestyle = None, linewidth = None,
                           legend = None, legendloc = (0.6,0.78), yaxislabelsize = 16, yaxisticklabelsize = 10, 
                           xaxisticklabelsize = 20, bintextpos = [0.2, 0.85], bintextsize = 15, figsize = (12, 12), 
                           show = 1):
 
-    nell, ntomo, ntomo2 = C_ss[0].shape
+    nell, ntomo, ntomo2 = C_sss[0][0].shape
     if ntomo != ntomo2:
         print("Bad Input (ntomo)")
         return 0
@@ -288,19 +290,12 @@ def plot_C_ss_tomo_limber(ell, C_ss, C_ss_ref = None, param = None, colorbarlabe
             shrink = 0.5)
         if not (colorbarlabel is None):
             cb.set_label(label = colorbarlabel, size = 20, weight = 'bold', labelpad = 2)
-        if len(param) != len(C_ss):
+        if len(param) != len(C_sss[0]):
             print("Bad Input")
             return 0
-
-    if not (linestyle is None):
-        linestylecycler = itertools.cycle(linestyle)
-    else:
-        linestylecycler = itertools.cycle(['solid'])
-
-    if not (linewidth is None):
-        linewidthcycler = itertools.cycle(linewidth)
-    else:
-        linewidthcycler = itertools.cycle([1.0])
+    
+    colors=['C0','red','darkgreen','orange','k']
+    ls=['-','-','-','-','--']
     
     for i in range(ntomo):
         for j in range(ntomo):
@@ -309,67 +304,69 @@ def plot_C_ss_tomo_limber(ell, C_ss, C_ss_ref = None, param = None, colorbarlabe
             else:
                 clmin = []
                 clmax = []
-                for Cl in C_ss:  
-                    tmp = ell * (ell + 1) * Cl[:,i,j] / (2 * math.pi)
-                    clmin.append(np.min(tmp))
-                    clmax.append(np.max(tmp))
-     
-                axes[j,i].set_xlim([lmin, lmax])
-                
-                if C_ss_ref is None:
-                    axes[j,i].set_ylim([np.min(ylim[0]*np.array(clmin)), np.max(ylim[1]*np.array(clmax))])
-                    axes[j,i].set_yscale('log')
-                else:
-                    tmp = np.array(ylim) - 1
-                    axes[j,i].set_ylim(tmp.tolist())
-                    axes[j,i].set_yscale('linear')
+                for ia_idx,C_ss in enumerate(C_sss):
+                    for Cl in C_ss:  
+                        tmp = Cl[:,i,j]
+                        clmin.append(np.min(tmp))
+                        clmax.append(np.max(tmp))
+        
+                    axes[j,i].set_xlim([lmin, lmax])
                     
-                axes[j,i].set_xscale('log')
-                
-                if i == 0:
                     if C_ss_ref is None:
-                        axes[j,i].set_ylabel("$\ell (\ell+1) C_{\ell}^{EE}/(2 \pi)$", fontsize=yaxislabelsize)
+                        pass
+                        # axes[j,i].set_ylim([np.min(ylim[0]*np.array(clmin)), np.max(ylim[1]*np.array(clmax))])
+                        axes[j,i].set_yscale('log')
                     else:
-                        axes[j,i].set_ylabel("frac. diff.", fontsize=yaxislabelsize)
-                for item in (axes[j,i].get_yticklabels()):
-                    item.set_fontsize(yaxisticklabelsize)
-                for item in (axes[j,i].get_xticklabels()):
-                    item.set_fontsize(xaxisticklabelsize)
-                
-                if j == 4:
-                    axes[j,i].set_xlabel(r"$\ell$", fontsize=16)
-                
-                axes[j,i].text(bintextpos[0], bintextpos[1], 
-                    "$(" +  str(i) + "," +  str(j) + ")$", 
-                    horizontalalignment = 'center', 
-                    verticalalignment = 'center',
-                    fontsize = bintextsize,
-                    usetex = True,
-                    transform = axes[j,i].transAxes)
-                
-                for x, Cl in enumerate(C_ss):
-                    if C_ss_ref is None:
-                        tmp = ell * (ell + 1) * Cl[:,i,j] / (2 * math.pi)
-                    else:
-                        tmp = Cl[:,i,j] / C_ss_ref[:,i,j] - 1
-                    lines = axes[j,i].plot(ell, tmp, 
-                                           color=cm(x/len(C_ss)), 
-                                           linewidth=next(linewidthcycler), 
-                                           linestyle=next(linestylecycler))
+                        tmp = np.array(ylim) - 1
+                        # axes[j,i].set_ylim(tmp.tolist())
+                        # axes[j,i].set_yscale('linear')
+                        
+                    axes[j,i].set_xscale('log')
+                    
+                    if i == 0:
+                        if C_ss_ref is None:
+                            axes[j,i].set_ylabel("$|C_{\ell}^{NLA~TERM}|$", fontsize=yaxislabelsize)
+                        else:
+                            axes[j,i].set_ylabel("frac. diff.", fontsize=yaxislabelsize)
+                    for item in (axes[j,i].get_yticklabels()):
+                        item.set_fontsize(yaxisticklabelsize)
+                    for item in (axes[j,i].get_xticklabels()):
+                        item.set_fontsize(xaxisticklabelsize)
+                    
+                    if j == 4:
+                        axes[j,i].set_xlabel(r"$\ell$", fontsize=16)
+                    
+                    axes[j,i].text(bintextpos[0], bintextpos[1], 
+                        "$(" +  str(i) + "," +  str(j) + ")$", 
+                        horizontalalignment = 'center', 
+                        verticalalignment = 'center',
+                        fontsize = bintextsize,
+                        usetex = True,
+                        transform = axes[j,i].transAxes)
+                    
+                    for x, Cl in enumerate(C_ss):
+                        if C_ss_ref is None:
+                            tmp = Cl[:,i,j]
+                        else:
+                            tmp = Cl[:,i,j] / C_ss_ref[:,i,j] - 1 
+                        lines = axes[j,i].plot(ell, tmp, 
+                                            color=colors[ia_idx], 
+                                            linewidth=2, 
+                                            linestyle=ls[ia_idx])
     
-    if not (legend is None):
-        if len(legend) != len(C_ss):
-            print("Bad Input")
-            return 0
-        fig.legend(
-            legend, 
-            loc=legendloc,
-            borderpad=0.1,
-            handletextpad=0.4,
-            handlelength=1.5,
-            columnspacing=0.35,
-            scatteryoffsets=[0],
-            frameon=False)
+    # if not (legend is None):
+        # if len(legend) != len(C_ss):
+        #     print("Bad Input")
+        #     return 0
+    fig.legend(
+        legend, 
+        loc=legendloc,
+        borderpad=0.1,
+        handletextpad=0.4,
+        handlelength=1.5,
+        columnspacing=0.35,
+        scatteryoffsets=[0],
+        frameon=False)
 
     if not (show is None):
         fig.show()
@@ -411,19 +408,19 @@ ell = np.arange(25., 1500., 20.) # Make sure np.arange are set w/ float numbers 
 
 # param = np.arange(0.2, 0.4, 0.02)
 param = [omegam]
-        
-C_ss_0 = []
-C_ss_1 = []
-for x in param:
-    (Cl_0, tmp_0) = C_ss_tomo_limber(ell=ell, omegam=x)[0]
-    (Cl_1, tmp_1) = C_ss_tomo_limber(ell=ell, omegam=x)[1]
-    C_ss_0.append(Cl_0)
-    C_ss_1.append(Cl_1)
+ia_nla_terms = [0,1,2,3,-1]
+
+C_ss_0,C_ss_1,C_ss_2,C_ss_3,C_ss = [],[],[],[],[]
+C_sss = [C_ss_0,C_ss_1,C_ss_2,C_ss_3,C_ss]
+
+for i in ia_nla_terms:
+    if i == -1:
+        (Cl_i, tmp_i) = C_ss_tomo_limber(ell=ell)[0]
+    else:    
+        (Cl_i, tmp_i) = C_ss_tomo_limber(ell=ell, ia_nla_term=i)[1]
+    C_sss[i].append(Cl_i)
 
 plt.figure()
-plot_C_ss_tomo_limber(ell=ell, C_ss=C_ss_0, param=param, colorbarlabel="$\Omega_m$")
-plt.savefig('./test_0.pdf')
-
-plt.figure()
-plot_C_ss_tomo_limber(ell=ell, C_ss=C_ss_1, param=param, colorbarlabel="$\Omega_m$")
-plt.savefig('./test_1.pdf')
+plot_C_ss_tomo_limber(ell=ell, C_sss=abs(np.array(C_sss)),
+    ia_nla_terms=ia_nla_terms,legend=[r'$+$WK1$\times$WK2$\times$PK',r'$-$WS1$\times$WK2$\times$C11$\times$PK',r'$-$WS2$\times$WK1$\times$C12$\times$PK',r'$+$WS1$\times$WS2$\times$C11$\times$C12$\times$PK','$C_{\ell}^{EE}$'])
+plt.savefig(f'./test_all.pdf')

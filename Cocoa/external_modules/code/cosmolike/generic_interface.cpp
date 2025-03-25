@@ -1960,6 +1960,11 @@ void set_nuisance_pz_model(const int pz_model)
   nuisance.pz_model = pz_model;
 }
 
+void set_nuisance_ia_nla_term(const int ia_nla_term)
+{
+  nuisance.ia_nla_term = ia_nla_term;
+}
+
 // ---------------------------------------------------------------------------
 // ---------------------------------------------------------------------------
 // ---------------------------------------------------------------------------

@@ -219,6 +219,7 @@ void reset_nuisance_struct()
   nuisance.IA = 0;
   nuisance.IA_MODEL = 0;
   nuisance.pz_model = 0;
+  nuisance.ia_nla_term = -1;
 }
 
 void reset_cmb_struct()
