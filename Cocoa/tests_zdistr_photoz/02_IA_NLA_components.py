@@ -240,7 +240,7 @@ def C_ss_tomo_limber(ell,
 
 
 ### PLOT FUNCTION
-def plot_C_ss_tomo_limber(ell, C_sss, ia_nla_terms, C_ss_ref = None, param = None, colorbarlabel = None, lmin = 30, lmax = 1500, 
+def plot_C_ss_tomo_limber(ell, C_sss, ia_nla_terms, ylabel, C_ss_ref = None, param = None, colorbarlabel = None, lmin = 30, lmax = 1500, 
                           cmap = 'gist_rainbow', ylim = [0.75,1.25], linestyle = None, linewidth = None,
                           legend = None, legendloc = (0.6,0.78), yaxislabelsize = 16, yaxisticklabelsize = 10, 
                           xaxisticklabelsize = 20, bintextpos = [0.2, 0.85], bintextsize = 15, figsize = (12, 12), 
@@ -325,7 +325,7 @@ def plot_C_ss_tomo_limber(ell, C_sss, ia_nla_terms, C_ss_ref = None, param = Non
                     
                     if i == 0:
                         if C_ss_ref is None:
-                            axes[j,i].set_ylabel("$|C_{\ell}^{NLA~TERM}|$", fontsize=yaxislabelsize)
+                            axes[j,i].set_ylabel(ylabel, fontsize=yaxislabelsize)
                         else:
                             axes[j,i].set_ylabel("frac. diff.", fontsize=yaxislabelsize)
                     for item in (axes[j,i].get_yticklabels()):
@@ -400,27 +400,34 @@ ci.init_redshift_distributions_from_files(
 ci.init_IA( ia_model = int(IA_model), 
             ia_redshift_evolution = int(IA_redshift_evolution))
 
-
-
-
 ### PLOT
 ell = np.arange(25., 1500., 20.) # Make sure np.arange are set w/ float numbers (otherwise there are aliasing problems)
 
-# param = np.arange(0.2, 0.4, 0.02)
-param = [omegam]
 ia_nla_terms = [0,1,2,3,-1]
 
 C_ss_0,C_ss_1,C_ss_2,C_ss_3,C_ss = [],[],[],[],[]
-C_sss = [C_ss_0,C_ss_1,C_ss_2,C_ss_3,C_ss]
+C_ss_f0,C_ss_f1,C_ss_f2,C_ss_f3,C_ssf = [],[],[],[],[]
 
-for i in ia_nla_terms:
-    if i == -1:
+C_sss = [C_ss_0,C_ss_1,C_ss_2,C_ss_3,C_ss]
+C_sssf = [C_ss_f0,C_ss_f1,C_ss_f2,C_ss_f3,C_ssf]
+
+(Cl_tot, tmp_tot) = C_ss_tomo_limber(ell=ell)[0]
+
+for i,idx in enumerate(ia_nla_terms):
+    if idx == -1:
         (Cl_i, tmp_i) = C_ss_tomo_limber(ell=ell)[0]
     else:    
         (Cl_i, tmp_i) = C_ss_tomo_limber(ell=ell, ia_nla_term=i)[1]
     C_sss[i].append(Cl_i)
+    frac =  Cl_i/Cl_tot
+    C_sssf[i].append(frac)
 
 plt.figure()
-plot_C_ss_tomo_limber(ell=ell, C_sss=abs(np.array(C_sss)),
+plot_C_ss_tomo_limber(ell=ell, C_sss=abs(np.array(C_sss)),ylabel="$|C_{\ell}^{NLA~TERM}|$",
     ia_nla_terms=ia_nla_terms,legend=[r'$+$WK1$\times$WK2$\times$PK',r'$-$WS1$\times$WK2$\times$C11$\times$PK',r'$-$WS2$\times$WK1$\times$C12$\times$PK',r'$+$WS1$\times$WS2$\times$C11$\times$C12$\times$PK','$C_{\ell}^{EE}$'])
-plt.savefig(f'./test_all.pdf')
+plt.savefig(f'./02_IA_NLA_components.pdf')
+
+plt.figure()
+plot_C_ss_tomo_limber(ell=ell, C_sss=abs(np.array(C_sssf)),ylabel="$|C_{\ell}^{NLA~TERM}/C_{\ell}^{EE}|$",
+    ia_nla_terms=ia_nla_terms,legend=[r'$+$WK1$\times$WK2$\times$PK',r'$-$WS1$\times$WK2$\times$C11$\times$PK',r'$-$WS2$\times$WK1$\times$C12$\times$PK',r'$+$WS1$\times$WS2$\times$C11$\times$C12$\times$PK','$C_{\ell}^{EE}$'])
+plt.savefig(f'./02_IA_NLA_fracs.pdf')
