@@ -135,6 +135,8 @@ cobaya/cobaya/likelihoods/kids*
 cobaya/cobaya/likelihoods/cocoa_*
 cobaya/cobaya/likelihoods/ede*
 
-projects/lsst_y1/
-projects/lsst*/
+## DHFS TO DO - create roman pca project
+## for now storing results on lsst_y1
+# projects/lsst_y1/
+# projects/lsst*/
 projects/des*/

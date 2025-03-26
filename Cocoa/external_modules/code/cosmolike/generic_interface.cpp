@@ -1419,6 +1419,27 @@ void init_source_sample(std::string multihisto_file, const int Ntomo)
 // ---------------------------------------------------------------------------
 // ---------------------------------------------------------------------------
 
+// DHFS MOD START - READ SOURCE NZ PCS
+void init_source_pcs_sample(std::string multihisto_pcs_file)
+{
+  spdlog::debug("{}: Begins", "init_source_pcs_sample");
+
+  if (!(multihisto_pcs_file.size() > 0))
+  {
+    spdlog::critical("{}: empty {} string not supported",
+        "init_source_pcs_sample", "multihisto_pcs_file");
+    exit(1);
+  }
+
+  // READ THE PCs(Z) FILE BEGINS ------------
+  matrix input_pcs_table = read_table(multihisto_pcs_file);
+}
+// DHFS MOD END - READ SOURCE NZ PCS
+
+// ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
+
 void init_ntomo_powerspectra()
 {
   if (redshift.shear_nbin == 0)
@@ -1461,6 +1482,13 @@ void init_redshift_distributions_from_files(
 
   init_ntomo_powerspectra();
 }
+// DHFS MOD START - READ SOURCE NZ PCS
+void init_redshift_distributions_pcs_from_files(
+  std::string source_multihisto_pcs_file)
+{
+  init_source_pcs_sample(source_multihisto_pcs_file);
+}
+// DHFS MOD END - READ SOURCE NZ PCS
 
 // ---------------------------------------------------------------------------
 // ---------------------------------------------------------------------------

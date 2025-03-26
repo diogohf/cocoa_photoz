@@ -491,6 +491,12 @@ void init_redshift_distributions_from_files(
     const int source_ntomo
   );
 
+// DHFS MOD START - READ SOURCE NZ PCS
+void init_redshift_distributions_pcs_from_files(
+    std::string source_multihisto_pcs_file
+  );
+// DHFS MOD END - READ SOURCE NZ PCS
+
 void init_survey(
     std::string surveyname, 
     double area, 
