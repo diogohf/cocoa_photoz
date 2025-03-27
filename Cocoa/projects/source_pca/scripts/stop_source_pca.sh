@@ -1,0 +1,1 @@
+unset -v SPDLOG_LEVEL

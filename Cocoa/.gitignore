@@ -138,3 +138,5 @@ cobaya/cobaya/likelihoods/ede*
 projects/lsst_y1/
 projects/lsst*/
 projects/des*/
+projects/source_pca/likelihood
+projects/source_pca/data
